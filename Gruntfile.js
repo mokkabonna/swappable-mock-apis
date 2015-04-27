@@ -7,6 +7,8 @@ module.exports = function(grunt) {
   var url = require('url');
   var proxyMiddleware = require('proxy-middleware');
 
+  //define the apis our app uses and the default module for the express server and what port it should start on
+  //Also where it is attached on the local server
   var mockServers = {
     defaultApi: {
       attachTo: '/api',
@@ -20,6 +22,10 @@ module.exports = function(grunt) {
     }
   };
 
+  /**
+   * Iterates all our mock servers and sets up a proxy either to the predefined mock
+   * or to the supplied url given in the command line arguments
+   */
   function injectProxyMiddlewares(middlewares) {
     _.each(mockServers, function(config, name) {
       var overrideUrl = grunt.option(name);
@@ -35,21 +41,28 @@ module.exports = function(grunt) {
     });
   }
 
+  /**
+   * Injects a proxy middleware catching all the requests to route and forwarding them to apiUrl
+   */
   function attachProxy(middlewares, route, apiUrl) {
     var proxyConfig = url.parse(apiUrl);
     proxyConfig.route = route;
     //place before other middlewares
-    grunt.log.writeln('Forwarding requests to ' + route + ' to ' + apiUrl);
     middlewares.unshift(proxyMiddleware(proxyConfig));
+
+    grunt.log.writeln('Requests to ' + route + ' will be forwared to ' + apiUrl);
   }
 
+  /**
+   * Start the mock according to the mock config
+   */
   function startMock(config, name) {
     var mockServer = require(config.mockServer);
-    grunt.log.writeln('Starting mock server ' + name + ' on localhost:' + config.port);
     mockServer.listen(config.port);
+
+    grunt.log.writeln('Started mock server ' + name + ' on localhost:' + config.port);
   }
 
-  // Define the configuration for all the tasks
   grunt.initConfig({
     connect: {
       devServer: {
